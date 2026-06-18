@@ -514,6 +514,10 @@
       opacity: 1;
     }
 
+    .print-stage {
+      display: none;
+    }
+
     .file-input {
       display: none;
     }
@@ -526,6 +530,20 @@
     @media print {
       body {
         background: #fff;
+      }
+
+      body.printing .app,
+      body.printing .toast {
+        display: none !important;
+      }
+
+      body.printing .print-stage {
+        display: block;
+      }
+
+      body.printing .print-stage svg {
+        width: 100%;
+        height: auto;
       }
 
       .app {
@@ -697,6 +715,7 @@
     </aside>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="printStage" class="print-stage" aria-hidden="true"></div>
 
   <script>
     const PROJECT_START = "2026-06-26";
@@ -1290,6 +1309,7 @@
       exportCsvBtn: document.getElementById("exportCsvBtn"),
       jsonInput: document.getElementById("jsonInput"),
       toast: document.getElementById("toast"),
+      printStage: document.getElementById("printStage"),
       taskForm: document.getElementById("taskForm"),
       emptyPanel: document.getElementById("emptyPanel"),
       deleteTaskBtn: document.getElementById("deleteTaskBtn"),
@@ -1822,26 +1842,42 @@
       selectedId = null;
       render();
       const svg = exportSvgString();
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("浏览器拦截了打印窗口。请允许弹窗，或先用“导出截图”。");
-        return;
-      }
-      printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>夜行者项目美术排期</title><style>@page{size:A3 landscape;margin:8mm}body{margin:0;background:#fff}svg{width:100%;height:auto}</style></head><body>${svg}<script>window.onload=()=>{setTimeout(()=>window.print(),200)}<\/script></body></html>`);
-      printWindow.document.close();
-      showToast("已打开打印页，请选择保存为 PDF");
+      el.printStage.innerHTML = svg;
+      document.body.classList.add("printing");
+      showToast("正在打开打印窗口，请选择保存为 PDF");
+      const cleanup = () => {
+        document.body.classList.remove("printing");
+        el.printStage.innerHTML = "";
+        window.removeEventListener("afterprint", cleanup);
+      };
+      window.addEventListener("afterprint", cleanup);
+      window.setTimeout(() => {
+        window.print();
+        window.setTimeout(cleanup, 3000);
+      }, 80);
     }
 
     async function exportPng() {
       try {
         showToast("正在生成截图...");
         const svg = exportSvgString();
+        download("nightwalker-art-schedule-screenshot.svg", svg, "image/svg+xml;charset=utf-8");
+        showToast("截图已导出为 SVG 图片");
+
+        const canTryPng = !/Firefox|Safari/i.test(navigator.userAgent) || /Chrome|Chromium|Edg/i.test(navigator.userAgent);
+        if (!canTryPng) return;
+
         const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(svgBlob);
         const img = new Image();
         await new Promise((resolve, reject) => {
+          const timer = window.setTimeout(() => reject(new Error("image-timeout")), 2500);
           img.onload = resolve;
           img.onerror = reject;
+          img.onload = () => {
+            window.clearTimeout(timer);
+            resolve();
+          };
           img.src = url;
         });
         const canvas = document.createElement("canvas");
@@ -1859,10 +1895,10 @@
             return;
           }
           downloadBlob("nightwalker-art-schedule.png", blob);
-          showToast("截图已导出");
+          showToast("截图已导出：SVG 和 PNG");
         }, "image/png");
       } catch {
-        alert("截图生成失败，请使用浏览器自带截图或打印保存 PDF。");
+        showToast("已导出 SVG 截图；PNG 转换被浏览器拦截");
       }
     }
 
