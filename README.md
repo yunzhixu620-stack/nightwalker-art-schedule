@@ -1,6 +1,6 @@
-# Nightwalker Art Schedule
+# Code R Train Art Schedule
 
-Lightweight browser-based Gantt scheduler for the Nightwalker art production plan.
+Lightweight browser-based Gantt scheduler for the Code R Doomsday Train art production plan.
 
 Open `index.html` or the GitHub Pages URL to edit task dates, durations, owners, dependencies, and notes. Data is stored in the browser's local storage. Use JSON export/import to exchange changes between computers.
 

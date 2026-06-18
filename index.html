@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>夜行者项目美术排期</title>
+  <title>代号R末日列车项目美术排期</title>
   <style>
     :root {
       --bg: #f5f7fb;
@@ -610,7 +610,7 @@
   <div class="app">
     <header class="topbar">
       <div class="title">
-        <h1>夜行者项目美术排期</h1>
+        <h1>代号R末日列车项目美术排期</h1>
         <p>2026-06-26 至 2026-07-31 · 原画 / 模型 / Spine / 动作</p>
       </div>
       <div class="actions">
@@ -1766,7 +1766,7 @@
     }
 
     function saveJson() {
-      download("nightwalker-art-schedule.json", JSON.stringify({ project: "夜行者项目", range: [PROJECT_START, PROJECT_END], tasks }, null, 2), "application/json;charset=utf-8");
+      download("code-r-train-art-schedule.json", JSON.stringify({ project: "代号R末日列车项目", range: [PROJECT_START, PROJECT_END], tasks }, null, 2), "application/json;charset=utf-8");
     }
 
     function exportCsv() {
@@ -1775,7 +1775,7 @@
         const value = key === "dependsOn" ? task.dependsOn.join("|") : task[key];
         return `"${String(value ?? "").replaceAll('"', '""')}"`;
       }).join(","));
-      download("nightwalker-art-schedule.csv", `${headers.join(",")}\n${rows.join("\n")}`, "text/csv;charset=utf-8");
+      download("code-r-train-art-schedule.csv", `${headers.join(",")}\n${rows.join("\n")}`, "text/csv;charset=utf-8");
     }
 
     function showToast(message) {
@@ -1796,7 +1796,7 @@
       const parts = [
         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}">`,
         `<rect width="${width}" height="${totalHeight}" fill="#f5f7fb"/>`,
-        `<text x="20" y="28" fill="#111827" font-size="20" font-weight="700" font-family="Microsoft YaHei, Arial">夜行者项目美术排期</text>`,
+        `<text x="20" y="28" fill="#111827" font-size="20" font-weight="700" font-family="Microsoft YaHei, Arial">代号R末日列车项目美术排期</text>`,
         `<text x="20" y="52" fill="#667085" font-size="13" font-family="Microsoft YaHei, Arial">2026-06-26 至 2026-07-31 · 原画 / 模型 / Spine / 动作 · CSV 需求按产能规则细化</text>`,
         `<rect x="0" y="${headerHeight}" width="${width}" height="36" fill="#ffffff"/>`,
         `<line x1="0" y1="${headerHeight + 36}" x2="${width}" y2="${headerHeight + 36}" stroke="#bcc5d4"/>`
@@ -1861,7 +1861,7 @@
       try {
         showToast("正在生成截图...");
         const svg = exportSvgString();
-        download("nightwalker-art-schedule-screenshot.svg", svg, "image/svg+xml;charset=utf-8");
+        download("code-r-train-art-schedule-screenshot.svg", svg, "image/svg+xml;charset=utf-8");
         showToast("截图已导出为 SVG 图片");
 
         const canTryPng = !/Firefox|Safari/i.test(navigator.userAgent) || /Chrome|Chromium|Edg/i.test(navigator.userAgent);
@@ -1894,7 +1894,7 @@
             alert("截图生成失败，请使用浏览器自带截图或打印保存 PDF。");
             return;
           }
-          downloadBlob("nightwalker-art-schedule.png", blob);
+          downloadBlob("code-r-train-art-schedule.png", blob);
           showToast("截图已导出：SVG 和 PNG");
         }, "image/png");
       } catch {
@@ -1909,7 +1909,7 @@ localStorage.setItem(${JSON.stringify(STORAGE_KEY)}, ${JSON.stringify(JSON.strin
       let html = "<!doctype html>\n" + document.documentElement.outerHTML;
       html = html.replace(/<script id="share-data-seed">[\s\S]*?<\/script>/, "");
       html = html.replace("<body>", `<body>\n  ${seed}`);
-      download("nightwalker-art-schedule-share.html", html, "text/html;charset=utf-8");
+      download("code-r-train-art-schedule-share.html", html, "text/html;charset=utf-8");
       showToast("分享网页已导出");
     }
 
