@@ -1,0 +1,1957 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>夜行者项目美术排期</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d9dee8;
+      --line-strong: #bcc5d4;
+      --text: #1f2937;
+      --muted: #667085;
+      --blue: #2f6fed;
+      --green: #2f9e76;
+      --amber: #c98218;
+      --red: #d92d20;
+      --red-bg: #fff1f0;
+      --outsource: #7c3aed;
+      --internal: #0f766e;
+      --intern: #d99a00;
+      --shadow: 0 10px 28px rgba(16, 24, 40, 0.10);
+      --day-width: 34px;
+      --lane-height: 116px;
+      --task-row-height: 46px;
+      --row-label: 88px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--blue); color: var(--blue); }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(760px, 1fr) 340px;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .mode {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      background: #eef2f7;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .mode button {
+      border: 0;
+      background: transparent;
+      padding: 7px 10px;
+      color: var(--muted);
+    }
+
+    .mode button.active {
+      color: #fff;
+      background: var(--blue);
+      box-shadow: 0 1px 4px rgba(47, 111, 237, 0.22);
+    }
+
+    .main {
+      min-width: 0;
+      padding: 16px 0 18px 18px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 14px;
+    }
+
+    .board-shell {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      min-height: 560px;
+    }
+
+    .board-scroll {
+      overflow: auto;
+      height: calc(100vh - 212px);
+      min-height: 460px;
+      position: relative;
+    }
+
+    .timeline {
+      position: relative;
+      min-width: calc(var(--row-label) + 36 * var(--day-width) + 180px);
+    }
+
+    .date-header {
+      display: grid;
+      grid-template-columns: var(--row-label) repeat(36, var(--day-width));
+      position: sticky;
+      top: 0;
+      z-index: 12;
+      background: #fff;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .corner {
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .date-cell {
+      height: 52px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .date-cell.weekend {
+      background: #eaf6ff;
+    }
+
+    .date-cell.todayish {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    .lanes {
+      position: relative;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: var(--row-label) 1fr;
+      height: var(--lane-height);
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+
+    .lane-label {
+      padding: 14px 12px;
+      border-right: 1px solid var(--line);
+      background: #fbfcfe;
+      font-weight: 700;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      color: #344054;
+    }
+
+    .lane-grid {
+      position: relative;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(var(--day-width) - 1px),
+        var(--line) calc(var(--day-width) - 1px),
+        var(--line) var(--day-width)
+      );
+    }
+
+    .weekend-band {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: var(--day-width);
+      pointer-events: none;
+      background: #eaf6ff;
+      opacity: 0.72;
+      z-index: 1;
+    }
+
+    .dependency-layer {
+      position: absolute;
+      left: var(--row-label);
+      top: 0;
+      width: calc(36 * var(--day-width) + 180px);
+      height: calc(4 * var(--lane-height));
+      pointer-events: none;
+      z-index: 2;
+      overflow: visible;
+    }
+
+    .task {
+      position: absolute;
+      top: 18px;
+      height: 38px;
+      border-radius: 6px;
+      color: #fff;
+      z-index: 4;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      min-width: 108px;
+      box-shadow: 0 8px 18px rgba(16, 24, 40, 0.18);
+      outline: 2px solid transparent;
+      user-select: none;
+    }
+
+    .task.selected {
+      outline-color: #111827;
+      outline-offset: 2px;
+    }
+
+    .task.internal { background: linear-gradient(135deg, var(--internal), #22a38f); }
+    .task.intern { background: linear-gradient(135deg, var(--intern), #f4b740); color: #111827; }
+    .task.outsource {
+      background: repeating-linear-gradient(
+        135deg,
+        var(--outsource) 0,
+        var(--outsource) 9px,
+        #9254de 9px,
+        #9254de 18px
+      );
+    }
+    .task.conflict {
+      background: linear-gradient(135deg, var(--red), #f04438);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 8px 18px rgba(217, 45, 32, 0.24); }
+      50% { box-shadow: 0 8px 24px rgba(217, 45, 32, 0.48); }
+    }
+
+    .task-content {
+      min-width: 0;
+      padding: 4px 9px;
+      width: 100%;
+      line-height: 1.25;
+    }
+
+    .task-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .task-meta {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.86;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 10px;
+      height: 100%;
+      cursor: ew-resize;
+      border-radius: 0 6px 6px 0;
+      background: rgba(255,255,255,0.24);
+    }
+
+    .side {
+      border-left: 1px solid var(--line);
+      background: var(--panel);
+      min-width: 0;
+      padding: 16px;
+      overflow: auto;
+      height: calc(100vh - 73px);
+      position: sticky;
+      top: 73px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 18px 0;
+      line-height: 1.6;
+    }
+
+    .form {
+      display: grid;
+      gap: 11px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 9px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 78px;
+    }
+
+    .inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: var(--muted);
+      font-size: 12px;
+      background: #f8fafc;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfe;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .swatch.internal { background: var(--internal); }
+    .swatch.outsource { background: var(--outsource); }
+    .swatch.intern { background: var(--intern); }
+    .swatch.conflict { background: var(--red); }
+
+    .risk {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .risk h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .risk-count {
+      color: #fff;
+      background: var(--red);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .risk-list {
+      max-height: 152px;
+      overflow: auto;
+      padding: 8px 14px 12px;
+    }
+
+    .risk-item {
+      background: var(--red-bg);
+      border: 1px solid #fecdca;
+      color: #912018;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 7px;
+      line-height: 1.45;
+    }
+
+    .risk-ok {
+      color: var(--muted);
+      padding: 12px 0 4px;
+    }
+
+    .mini-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .danger {
+      border-color: #fecdca;
+      color: var(--red);
+    }
+
+    .primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .primary:hover {
+      color: #fff;
+      filter: brightness(0.96);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 40;
+      background: #111827;
+      color: #fff;
+      border-radius: 7px;
+      padding: 9px 13px;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    @page {
+      size: A3 landscape;
+      margin: 8mm;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .app {
+        display: block;
+      }
+
+      .actions,
+      .side,
+      .legend span:last-child {
+        display: none !important;
+      }
+
+      .topbar {
+        position: static;
+        border-bottom: 1px solid #d0d5dd;
+      }
+
+      .main {
+        padding: 12px 0 0;
+        display: block;
+      }
+
+      .board-shell,
+      .risk {
+        box-shadow: none;
+        border-radius: 0;
+        break-inside: avoid;
+      }
+
+      .board-scroll {
+        height: auto;
+        overflow: visible;
+      }
+
+      .timeline {
+        transform: scale(0.82);
+        transform-origin: top left;
+      }
+
+      .risk {
+        margin-top: -70px;
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+        height: auto;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .main {
+        padding-right: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="title">
+        <h1>夜行者项目美术排期</h1>
+        <p>2026-06-26 至 2026-07-31 · 原画 / 模型 / Spine / 动作</p>
+      </div>
+      <div class="actions">
+        <div class="mode" aria-label="联动模式">
+          <button id="riskModeBtn" class="active" type="button">风险提示</button>
+          <button id="autoModeBtn" type="button">自动联动</button>
+        </div>
+        <button id="addTaskBtn" type="button">新增任务</button>
+        <button id="saveJsonBtn" type="button">保存 JSON</button>
+        <button id="loadJsonBtn" type="button">读取 JSON</button>
+        <button id="exportPdfBtn" type="button">导出 PDF</button>
+        <button id="exportPngBtn" type="button">导出截图</button>
+        <button id="exportShareBtn" type="button">导出分享网页</button>
+        <button id="exportCsvBtn" class="primary" type="button">导出 CSV</button>
+        <input id="jsonInput" class="file-input" type="file" accept="application/json,.json" />
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="board-shell" aria-label="甘特图">
+        <div id="boardScroll" class="board-scroll">
+          <div id="timeline" class="timeline">
+            <div id="dateHeader" class="date-header"></div>
+            <div class="lanes" id="lanes"></div>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="swatch internal"></i>内部任务</span>
+          <span><i class="swatch intern"></i>实习生 / 原画外派 A</span>
+          <span><i class="swatch outsource"></i>外包任务</span>
+          <span><i class="swatch conflict"></i>依赖冲突</span>
+          <span>悬停任务可查看前置与备注，点击后在右侧编辑</span>
+        </div>
+      </section>
+
+      <section class="risk" aria-label="风险区">
+        <h2>风险区 <span id="riskCount" class="risk-count">0</span></h2>
+        <div id="riskList" class="risk-list"></div>
+      </section>
+    </main>
+
+    <aside class="side" aria-label="任务编辑">
+      <div class="panel-title">
+        <h2>任务信息</h2>
+        <button id="deleteTaskBtn" class="danger" type="button" disabled>删除</button>
+      </div>
+      <div id="emptyPanel" class="empty">点击任意任务后，可编辑开始时间、工期、前置任务和备注。</div>
+      <form id="taskForm" class="form" hidden>
+        <label>任务 ID
+          <input id="fieldId" readonly />
+        </label>
+        <label>任务名称
+          <input id="fieldName" />
+        </label>
+        <div class="inline">
+          <label>模块
+            <select id="fieldModule"></select>
+          </label>
+          <label>类型
+            <select id="fieldType">
+              <option>内部</option>
+              <option>实习生</option>
+              <option>外包</option>
+            </select>
+          </label>
+        </div>
+        <div class="inline">
+          <label>开始时间
+            <input id="fieldStart" type="date" min="2026-06-26" max="2026-07-31" />
+          </label>
+          <label>工期（天）
+            <input id="fieldDuration" type="number" min="1" max="36" />
+          </label>
+        </div>
+        <div class="inline">
+          <label>负责人
+            <input id="fieldOwner" />
+          </label>
+          <label>优先级
+            <select id="fieldPriority">
+              <option>高</option>
+              <option>中</option>
+              <option>低</option>
+            </select>
+          </label>
+        </div>
+        <label>截止时间
+          <input id="fieldDeadline" type="date" min="2026-06-26" max="2026-07-31" />
+        </label>
+        <label>前置任务
+          <select id="fieldDepends" multiple size="8"></select>
+        </label>
+        <div id="ruleChips" class="chips"></div>
+        <label>备注
+          <textarea id="fieldNotes"></textarea>
+        </label>
+        <div class="mini-actions">
+          <button id="applyEditBtn" class="primary" type="submit">应用修改</button>
+          <button id="clearStorageBtn" type="button">恢复初始</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const PROJECT_START = "2026-06-26";
+    const PROJECT_END = "2026-07-31";
+    const DAY_WIDTH = 34;
+    const LANE_HEIGHT = 116;
+    const TASK_ROW_HEIGHT = 38;
+    const MODULES = ["原画", "模型", "Spine", "动作"];
+    const STORAGE_KEY = "art-gantt-scheduler-v8";
+
+    const initialTasks = [
+      {
+        id: "concept-hero",
+        name: "夜行者主角原画",
+        module: "原画",
+        startDate: "2026-06-26",
+        durationDays: 7,
+        owner: "内部原画A",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-10",
+        priority: "高",
+        notes: "主角设计先行，供模型和动作风格确认。"
+      },
+      {
+        id: "concept-weapon",
+        name: "武器与道具原画",
+        module: "原画",
+        startDate: "2026-07-01",
+        durationDays: 6,
+        owner: "外包原画组",
+        type: "外包",
+        dependsOn: [],
+        deadline: "2026-07-14",
+        priority: "中",
+        notes: "外包交付需保留 1 天反馈窗口。"
+      },
+      {
+        id: "concept-enemy",
+        name: "敌人与变体原画",
+        module: "原画",
+        startDate: "2026-07-08",
+        durationDays: 8,
+        owner: "内部原画B",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-24",
+        priority: "中",
+        notes: "原画最晚 7/24 截止，7/31 不安排原画。"
+      },
+      {
+        id: "model-hero",
+        name: "主角模型制作",
+        module: "模型",
+        startDate: "2026-07-03",
+        durationDays: 8,
+        owner: "模型A",
+        type: "内部",
+        dependsOn: ["concept-hero"],
+        deadline: "2026-07-17",
+        priority: "高",
+        notes: "整体前移，主角原画完成后立即进入。"
+      },
+      {
+        id: "model-weapon",
+        name: "武器道具模型",
+        module: "模型",
+        startDate: "2026-07-08",
+        durationDays: 5,
+        owner: "外包模型组",
+        type: "外包",
+        dependsOn: ["concept-weapon"],
+        deadline: "2026-07-18",
+        priority: "中",
+        notes: "外包任务，需跟进返修。"
+      },
+      {
+        id: "model-enemy",
+        name: "敌人模型制作",
+        module: "模型",
+        startDate: "2026-07-17",
+        durationDays: 7,
+        owner: "模型B",
+        type: "内部",
+        dependsOn: ["concept-enemy"],
+        deadline: "2026-07-27",
+        priority: "中",
+        notes: "尽量压缩到动作前完成。"
+      },
+      {
+        id: "spine-hero-bind",
+        name: "主角 Spine 绑定",
+        module: "Spine",
+        startDate: "2026-07-13",
+        durationDays: 5,
+        owner: "SpineA",
+        type: "内部",
+        dependsOn: ["model-hero"],
+        deadline: "2026-07-22",
+        priority: "高",
+        notes: "Spine 动作前置。"
+      },
+      {
+        id: "spine-enemy-bind",
+        name: "敌人 Spine 绑定",
+        module: "Spine",
+        startDate: "2026-07-25",
+        durationDays: 4,
+        owner: "外包 Spine",
+        type: "外包",
+        dependsOn: ["model-enemy"],
+        deadline: "2026-07-30",
+        priority: "中",
+        notes: "外包绑定，完成后才能排 Spine 动作。"
+      },
+      {
+        id: "anim-hero-basic",
+        name: "主角基础动作",
+        module: "动作",
+        startDate: "2026-07-19",
+        durationDays: 5,
+        owner: "动作A",
+        type: "内部",
+        dependsOn: ["spine-hero-bind", "model-hero"],
+        deadline: "2026-07-27",
+        priority: "高",
+        notes: "动作必须依赖模型/绑定完成。"
+      },
+      {
+        id: "anim-hero-combat",
+        name: "主角战斗动作",
+        module: "动作",
+        startDate: "2026-07-24",
+        durationDays: 5,
+        owner: "外包动作组",
+        type: "外包",
+        dependsOn: ["anim-hero-basic", "spine-hero-bind"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "外包动作，需要内部验收。"
+      },
+      {
+        id: "anim-enemy",
+        name: "敌人动作",
+        module: "动作",
+        startDate: "2026-07-29",
+        durationDays: 3,
+        owner: "动作B",
+        type: "内部",
+        dependsOn: ["spine-enemy-bind", "model-enemy"],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "若绑定延迟将直接影响 7/31 截止。"
+      }
+    ];
+
+    initialTasks.splice(0, initialTasks.length, ...[
+      {
+        id: "concept-0626-main",
+        name: "6/26 主角与核心原画",
+        module: "原画",
+        startDate: "2026-06-26",
+        durationDays: 4,
+        owner: "原画-夜行者",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "高",
+        notes: "主角、主角妹妹、罗宾汉、主角维多利亚、男宾汉维多利亚、小丧尸、亚瑟王，共 7 个，目标 48h 内完成。"
+      },
+      {
+        id: "concept-0626-intern",
+        name: "6/26 村民与达芬奇原画",
+        module: "原画",
+        startDate: "2026-06-26",
+        durationDays: 5,
+        owner: "原画外派A",
+        type: "实习生",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "中",
+        notes: "村民 1-6、达芬奇预计 36h。原画外派 A 不计入外包，用实习生颜色标识。"
+      },
+      {
+        id: "concept-0703-main",
+        name: "7/3 挂机与角色原画",
+        module: "原画",
+        startDate: "2026-07-03",
+        durationDays: 5,
+        owner: "原画-夜行者",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "高",
+        notes: "参孙、雷达怪、查理曼、列奥尼达、RPG 挂机、老弱病 123 和叶，预计 40h。"
+      },
+      {
+        id: "concept-0703-intern",
+        name: "7/3 村民与弱病补充",
+        module: "原画",
+        startDate: "2026-07-06",
+        durationDays: 5,
+        owner: "原画外派A",
+        type: "实习生",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "中",
+        notes: "村民男女剑师、医生、集结怪、挑战怪 03、马脸、威廉华莱士、老弱病残45，预计 43h。"
+      },
+      {
+        id: "concept-0710-main",
+        name: "7/10 Boss 与场景原画",
+        module: "原画",
+        startDate: "2026-07-10",
+        durationDays: 4,
+        owner: "原画-夜行者",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "高",
+        notes: "米开朗基罗、伊丽莎白、蒙族马特、哥伦布、贞德奇进度快则排理想 Boss 与世界 Boss。"
+      },
+      {
+        id: "concept-0710-intern",
+        name: "7/10 矛兵 1-10",
+        module: "原画",
+        startDate: "2026-07-10",
+        durationDays: 4,
+        owner: "原画外派A",
+        type: "实习生",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "中",
+        notes: "矛兵 1-10。"
+      },
+      {
+        id: "concept-0717-final",
+        name: "7/17 原画收尾迭代",
+        module: "原画",
+        startDate: "2026-07-14",
+        durationDays: 4,
+        owner: "原画-夜行者",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-17",
+        priority: "高",
+        notes: "格蕾丝、布狄卡、康斯坦斯若双 Boss 画完则补小章鱼、章鱼贪婪；目标 7/17 迭代完成。"
+      },
+      {
+        id: "concept-hard-stop",
+        name: "7/24 原画硬截止检查",
+        module: "原画",
+        startDate: "2026-07-24",
+        durationDays: 1,
+        owner: "PM",
+        type: "内部",
+        dependsOn: ["concept-0717-final"],
+        deadline: "2026-07-24",
+        priority: "高",
+        notes: "仅作为检查点：原画硬截止，7/31 不再留原画。"
+      },
+      {
+        id: "model-0626-outsourcing-start",
+        name: "模型外包前置启动",
+        module: "模型",
+        startDate: "2026-06-26",
+        durationDays: 7,
+        owner: "模型外包",
+        type: "外包",
+        dependsOn: [],
+        deadline: "2026-07-03",
+        priority: "高",
+        notes: "6/26 前置启动，保障 7/03 动作不断档。其余 7 个村民模型按 7 x 2d 估算。"
+      },
+      {
+        id: "model-0703-main-pool",
+        name: "7/3 主推进模型池",
+        module: "模型",
+        startDate: "2026-07-03",
+        durationDays: 15,
+        owner: "模型外包",
+        type: "外包",
+        dependsOn: ["concept-0626-main", "concept-0626-intern"],
+        deadline: "2026-07-24",
+        priority: "高",
+        notes: "除内部自做部分外的模型池。达芬奇考虑自做，村民自做 1 个，其余进外包池。"
+      },
+      {
+        id: "model-0703-internal",
+        name: "7/3 内部主角与妹妹模型",
+        module: "模型",
+        startDate: "2026-07-03",
+        durationDays: 7,
+        owner: "模型内部",
+        type: "内部",
+        dependsOn: ["concept-0626-main"],
+        deadline: "2026-07-24",
+        priority: "高",
+        notes: "主角、罗宾汉、妹妹村民优先做 2 个实例，其余进入外包池。"
+      },
+      {
+        id: "model-0710-batch",
+        name: "7/10 弱病与挑战模型",
+        module: "模型",
+        startDate: "2026-07-11",
+        durationDays: 7,
+        owner: "模型内部",
+        type: "内部",
+        dependsOn: ["concept-0703-main", "concept-0703-intern"],
+        deadline: "2026-07-24",
+        priority: "中",
+        notes: "老弱病残 1-5、小丧尸、达芬奇、雷达怪、挑战怪与暂定自做内容，其余外包 15d。"
+      },
+      {
+        id: "model-0717-boss",
+        name: "7/17 Boss 与兵种模型",
+        module: "模型",
+        startDate: "2026-07-18",
+        durationDays: 4,
+        owner: "模型内部",
+        type: "内部",
+        dependsOn: ["concept-0710-main", "concept-0710-intern"],
+        deadline: "2026-07-24",
+        priority: "高",
+        notes: "沙盘侦查单位、挑战怪 03、集结怪；模型迭代向 7/24 收束。"
+      },
+      {
+        id: "model-0724-finish",
+        name: "7/24 模型迭代完成",
+        module: "模型",
+        startDate: "2026-07-22",
+        durationDays: 2,
+        owner: "模型内部",
+        type: "内部",
+        dependsOn: ["concept-0717-final", "model-0717-boss"],
+        deadline: "2026-07-24",
+        priority: "高",
+        notes: "2 个 Boss 挑战怪 01/02 外包，模型期望 7/24 迭代完成。"
+      },
+      {
+        id: "model-0729-latest-buffer",
+        name: "7/29 模型最迟缓冲",
+        module: "模型",
+        startDate: "2026-07-25",
+        durationDays: 5,
+        owner: "模型内部",
+        type: "内部",
+        dependsOn: ["model-0724-finish"],
+        deadline: "2026-07-29",
+        priority: "高",
+        notes: "仅用于返修和收尾缓冲，最迟不能超过 7/29。"
+      },
+      {
+        id: "spine-0626-main",
+        name: "6/26 主角与罗宾汉 Spine",
+        module: "Spine",
+        startDate: "2026-06-26",
+        durationDays: 5,
+        owner: "Spine内部",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "主角、罗宾汉先启动。"
+      },
+      {
+        id: "spine-0703-lineup",
+        name: "7/3 列奥尼达等 Spine",
+        module: "Spine",
+        startDate: "2026-07-03",
+        durationDays: 7,
+        owner: "Spine内部",
+        type: "内部",
+        dependsOn: ["model-0626-outsourcing-start"],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "列车版主角、罗宾汉可延续；列奥尼达、华莱士、亚瑟王、列奥尼达。"
+      },
+      {
+        id: "spine-0710-outsourcing",
+        name: "7/10 英雄 Spine 外包",
+        module: "Spine",
+        startDate: "2026-07-10",
+        durationDays: 12,
+        owner: "Spine外包",
+        type: "外包",
+        dependsOn: ["model-0703-internal"],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "2 个英雄自做，其他外包 12d；外包继续消化，模型尽量前移。"
+      },
+      {
+        id: "spine-0717-spear",
+        name: "7/17 矛兵兵种 Spine",
+        module: "Spine",
+        startDate: "2026-07-18",
+        durationDays: 6,
+        owner: "Spine外包",
+        type: "外包",
+        dependsOn: ["model-0710-batch"],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "矛兵兵种外包 6d，英雄自做：撒丝、布狄卡、康斯坦斯。"
+      },
+      {
+        id: "spine-0724-archer",
+        name: "7/24 射手兵种 Spine",
+        module: "Spine",
+        startDate: "2026-07-24",
+        durationDays: 6,
+        owner: "Spine外包",
+        type: "外包",
+        dependsOn: ["model-0724-finish"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "射手外包 6d，内部做达芬奇、蒙特祖玛、哥伦布。"
+      },
+      {
+        id: "spine-0731-shield",
+        name: "7/31 盾兵内容收尾",
+        module: "Spine",
+        startDate: "2026-07-25",
+        durationDays: 6,
+        owner: "Spine外包",
+        type: "外包",
+        dependsOn: ["model-0724-finish"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "盾兵内容收尾外包，动作与 Spine 期望 7/31 完成。"
+      },
+      {
+        id: "anim-0626-prep",
+        name: "6/26 动作与绑定准备",
+        module: "动作",
+        startDate: "2026-06-26",
+        durationDays: 5,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: [],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "动作依赖模型 / 绑定；本迭代主要做准备。"
+      },
+      {
+        id: "anim-0703-villager",
+        name: "7/3 村民动作",
+        module: "动作",
+        startDate: "2026-07-03",
+        durationDays: 5,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: ["model-0626-outsourcing-start"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "优先村民 1，前提是村民 1 模型完成。"
+      },
+      {
+        id: "anim-0710-new",
+        name: "7/10 新动作与挂机场景",
+        module: "动作",
+        startDate: "2026-07-18",
+        durationDays: 4,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: ["model-0703-internal", "spine-0703-lineup"],
+        deadline: "2026-07-31",
+        priority: "中",
+        notes: "新动作 6、妹妹、挂机场景。"
+      },
+      {
+        id: "anim-0717-boss",
+        name: "7/17 Boss 新动作",
+        module: "动作",
+        startDate: "2026-07-22",
+        durationDays: 5,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: ["model-0717-boss", "spine-0710-outsourcing"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "老弱病残、达芬奇、车头 2 个新动作。"
+      },
+      {
+        id: "anim-0724-boss",
+        name: "7/24 Boss 动作完成",
+        module: "动作",
+        startDate: "2026-07-27",
+        durationDays: 3,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: ["model-0724-finish", "spine-0717-spear"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "先老弱病残 Boss 模型完成，则做 2 个 Boss 动作。"
+      },
+      {
+        id: "anim-0731-finish",
+        name: "7/31 剩余怪物动作",
+        module: "动作",
+        startDate: "2026-07-31",
+        durationDays: 1,
+        owner: "动作内部",
+        type: "内部",
+        dependsOn: ["anim-0724-boss", "spine-0731-shield"],
+        deadline: "2026-07-31",
+        priority: "高",
+        notes: "剩余怪物动作收尾，动作期望 7/31 完成。"
+      }
+    ]);
+
+    initialTasks.splice(0, initialTasks.length, ...buildEstimatedTasks());
+
+    function buildEstimatedTasks() {
+      const data = [
+        ["concept-villager-old", "老弱病残村民原画 5 个", "原画", "2026-06-26", 5, "夜行者 + 原画外派A", "内部", [], "2026-07-17", "高", "分工表：A-0001~A-0003 夜行者，A-0004~A-0005 原画外派A。估算：村民 1 天 1 个，共 5 人天。"],
+        ["concept-villager-sim", "模拟经营村民原画 11 个", "原画", "2026-06-26", 11, "原画外派A", "实习生", [], "2026-07-17", "高", "分工表：A-0068~A-0078 基本由原画外派A负责。估算：村民 1 天 1 个，共 11 人天；外派 A 不算外包。"],
+        ["concept-hero-p0", "P0 英雄/主角原画 5 个", "原画", "2026-06-26", 9, "夜行者 + 原画外派A", "内部", [], "2026-07-17", "高", "分工表：兰斯洛特、主角、罗宾汉、妹妹等夜行者；达芬奇为原画外派A。估算：英雄 3 天 1 个，当前多人并行压到 9 天。"],
+        ["concept-hero-p1-a", "P1 英雄原画第一批 7 个", "原画", "2026-07-03", 8, "夜行者 + 原画外派A", "内部", [], "2026-07-17", "高", "分工表：参孙、列奥尼达、查理曼等夜行者；马略、威廉华莱士等原画外派A。估算：英雄 3 天 1 个。"],
+        ["concept-hero-p1-b", "P1 英雄原画第二批 7 个", "原画", "2026-07-10", 8, "夜行者", "内部", [], "2026-07-17", "高", "分工表：伊丽莎白、米开朗基罗、蒙特祖玛、哥伦布、贞德、布狄卡、康斯坦丝、格蕾丝等由夜行者负责，目标 7/17 收口。"],
+        ["concept-soldier-shield", "盾兵原画 10 个", "原画", "2026-07-03", 5, "原画外派A", "实习生", [], "2026-07-17", "中", "分工表：A-0038~A-0047 盾兵 10 个均为原画外派A，迭代标在 7/24。估算：兵 1 天 2 个，共 5 人天。"],
+        ["concept-soldier-archer", "射手原画 10 个", "原画", "2026-07-08", 5, "原画外派A", "实习生", [], "2026-07-17", "中", "分工表：A-0048~A-0057 射手 10 个均为原画外派A，迭代标在 7/17。估算：兵 1 天 2 个，共 5 人天。"],
+        ["concept-soldier-spear", "矛兵原画 10 个", "原画", "2026-07-13", 5, "原画外派A", "实习生", [], "2026-07-17", "中", "分工表：A-0058~A-0067 矛兵 10 个均为原画外派A，迭代标在 7/10。估算：兵 1 天 2 个，共 5 人天。"],
+        ["concept-zombie-small", "小怪/沙盘怪原画 9 个", "原画", "2026-07-10", 5, "夜行者 + 原画外派A", "内部", [], "2026-07-17", "中", "分工表：小丧尸、雷达怪、挑战怪01等夜行者；集结怪、挑战怪02/03、经营雷达怪等原画外派A。估算：小怪 1 天 2 个。"],
+        ["concept-zombie-boss", "大怪/Boss 原画 4 个", "原画", "2026-07-14", 4, "夜行者", "内部", [], "2026-07-17", "中", "分工表：世界boss、联盟Boss、挑战怪Boss 等由夜行者负责。估算：大怪 1 天 1 个，共 4 人天。"],
+        ["concept-rpg-scene", "RPG 挂机场景原画", "原画", "2026-07-14", 3, "夜行者", "内部", [], "2026-07-17", "低", "分工表：A-0087 RPG 挂机场景原画为夜行者。场景按 3 天预估。"],
+        ["concept-hard-stop", "7/24 原画硬截止检查", "原画", "2026-07-24", 1, "PM", "内部", ["concept-hero-p1-b", "concept-zombie-boss"], "2026-07-24", "高", "原画目标 7/17 完成，7/24 只做硬截止检查；7/31 不再留原画。"],
+
+        ["model-main-hero", "主角模型自做", "模型", "2026-07-05", 5, "中台未分配（模型）", "内部", ["concept-hero-p0"], "2026-07-24", "高", "分工表：夜行者项目 6/26-7/31 模型条目中台负责人为空；主角自己做，按 3~5 天估算。"],
+        ["model-villager-a", "村民模型第一批 7 个", "模型", "2026-06-26", 14, "中台未分配（模型外包池）", "外包", [], "2026-07-24", "高", "分工表：村民模型 A-0079~A-0098 负责人为空；按外包池提前启动。估算：村民 2 天 1 个，共 14 人天。"],
+        ["model-villager-b", "村民模型第二批 7 个", "模型", "2026-07-07", 14, "中台未分配（模型外包池）", "外包", ["concept-villager-sim"], "2026-07-24", "高", "分工表：村民模型负责人为空；估算：村民 2 天 1 个，共 14 人天。"],
+        ["model-old-villager", "老弱病残模型 5 个", "模型", "2026-07-01", 10, "中台未分配（模型）", "内部", ["concept-villager-old"], "2026-07-24", "中", "分工表：A-0100~A-0104 负责人为空。估算：村民 2 天 1 个，共 10 人天。"],
+        ["model-zombie-small", "小怪模型 9 个", "模型", "2026-07-15", 9, "中台未分配（模型外包池）", "外包", ["concept-zombie-small"], "2026-07-24", "中", "分工表：小怪模型负责人为空；按外包池并行消化。"],
+        ["model-zombie-boss", "大怪/Boss 模型 4 个", "模型", "2026-07-18", 6, "中台未分配（模型）", "内部", ["concept-zombie-boss"], "2026-07-24", "高", "分工表：Boss 模型负责人为空。估算：大怪 3~5 天 1 个，当前按重点项并行排到 7/24。"],
+        ["model-hero-support", "英雄相关模型补充池", "模型", "2026-07-05", 13, "中台未分配（模型外包池）", "外包", ["concept-hero-p0"], "2026-07-24", "中", "分工表：英雄/达芬奇/罗宾汉等模型侧条目负责人为空，目标 7/24 迭代完成。"],
+        ["model-complete", "7/24 模型迭代完成", "模型", "2026-07-24", 1, "PM / 中台未分配", "内部", ["model-zombie-boss", "model-hero-support"], "2026-07-24", "高", "模型期望 7/24 迭代完成。"],
+        ["model-buffer", "7/29 模型最迟缓冲", "模型", "2026-07-25", 5, "PM / 中台未分配", "内部", ["model-complete"], "2026-07-29", "高", "只用于返修和兜底，最迟不能超过 7/29。"],
+
+        ["spine-hero-p0", "P0 英雄 Spine 5 个", "Spine", "2026-07-10", 9, "朔华 + 中台未分配", "内部", ["model-main-hero"], "2026-07-31", "高", "分工表：6/26 Spine 有 2 个朔华，部分英雄 Spine 负责人为空。估算：英雄 3 天 1 个，当前多人并行压缩。"],
+        ["spine-hero-p1-a", "P1 英雄 Spine 第一批 7 个", "Spine", "2026-07-18", 8, "朔华 + 中台未分配", "外包", ["model-hero-support"], "2026-07-31", "高", "分工表：7/10~7/17 英雄 Spine 部分朔华，部分负责人为空。估算：英雄 3 天 1 个，需并行。"],
+        ["spine-hero-p1-b", "P1 英雄 Spine 第二批 7 个", "Spine", "2026-07-18", 14, "朔华 + 中台未分配", "外包", ["model-hero-support"], "2026-07-31", "高", "分工表：7/17 后英雄 Spine 朔华与未分配混合。估算：英雄 3 天 1 个，需并行。"],
+        ["spine-shield", "盾兵 Spine 10 个", "Spine", "2026-07-10", 6, "中台未分配（Spine外包池）", "外包", ["concept-soldier-shield"], "2026-07-31", "中", "分工表：兵种 Spine 多数负责人为空；估算：兵 3 组，每组 10 个需要 6 天。"],
+        ["spine-archer", "射手 Spine 10 个", "Spine", "2026-07-17", 6, "中台未分配（Spine外包池）", "外包", ["concept-soldier-archer"], "2026-07-31", "中", "分工表：兵种 Spine 多数负责人为空；估算：兵 3 组，每组 10 个需要 6 天。"],
+        ["spine-spear", "矛兵 Spine 10 个", "Spine", "2026-07-24", 6, "中台未分配（Spine外包池）", "外包", ["concept-soldier-spear"], "2026-07-31", "高", "分工表：兵种 Spine 多数负责人为空；估算：兵 3 组，每组 10 个需要 6 天。"],
+        ["spine-zombie", "Spine 小怪总包", "Spine", "2026-07-24", 5, "中台未分配（Spine外包池）", "外包", ["model-zombie-small"], "2026-07-31", "中", "分工表：小怪 Spine 负责人为空；按小怪 Spine 总共 5 天估算。"],
+        ["spine-finish", "7/31 Spine 收尾", "Spine", "2026-07-30", 2, "朔华 + 中台未分配", "内部", ["spine-spear", "spine-zombie"], "2026-07-31", "高", "Spine 期望 7/31 完成。"],
+
+        ["anim-new-villager", "新动作绑定：模拟经营小人 33 项", "动作", "2026-07-10", 17, "朔华 + 中台未分配", "内部", ["model-villager-a"], "2026-07-31", "高", "分工表：村民厨师/医生部分为朔华，其余模拟经营动作多为空负责人。估算：新加动作 1 天绑定 2 个。"],
+        ["anim-old-bind", "老动作绑定复用", "动作", "2026-07-10", 6, "中台未分配（动作）", "内部", ["model-villager-a"], "2026-07-31", "中", "分工表：老动作复用相关多为空负责人；按老动作绑定 6 天估算。"],
+        ["anim-old-weak", "老弱病残动作 5 个", "动作", "2026-07-11", 8, "中台未分配（动作）", "内部", ["model-old-villager"], "2026-07-31", "高", "分工表：老弱病残动作 7/10~7/24 多为空负责人；5 个老弱病残动作 8 天。"],
+        ["anim-redundancy", "动作冗余与返修", "动作", "2026-07-19", 5, "PM / 动作组", "内部", ["anim-old-weak"], "2026-07-31", "高", "按额外 5 天冗余预留。"],
+        ["anim-zombie", "丧尸/小怪动作 11 项", "动作", "2026-07-29", 2, "中台未分配（动作）", "内部", ["spine-zombie"], "2026-07-31", "中", "分工表：7/31 丧尸/小怪动作负责人为空。按新动作 1 天绑定 2 个估算，当前压缩并行。"],
+        ["anim-room", "内城房间/场景动作 5 项", "动作", "2026-07-25", 5, "朔华 + 中台未分配", "内部", ["model-complete"], "2026-07-31", "中", "分工表：房间动画部分朔华，部分为空负责人；场景与房间动画按 5 天安排。"],
+        ["anim-guide", "新手引导 timeline 16 项", "动作", "2026-07-03", 12, "大空翼", "内部", [], "2026-07-31", "低", "分工表：timeline 主要为大空翼负责，独立于角色管线，先并行消化。"],
+        ["anim-finish", "7/31 动作收尾", "动作", "2026-07-31", 1, "PM / 动作组", "内部", ["anim-new-villager", "anim-zombie", "anim-room"], "2026-07-31", "高", "动作期望 7/31 完成。"]
+      ];
+
+      return data.map(([id, name, module, startDate, durationDays, owner, type, dependsOn, deadline, priority, notes]) => ({
+        id,
+        name,
+        module,
+        startDate,
+        durationDays,
+        owner,
+        type,
+        dependsOn,
+        deadline,
+        priority,
+        notes
+      }));
+    }
+
+    let tasks = loadTasks();
+    let selectedId = tasks[0]?.id || null;
+    let mode = "risk";
+    let dragState = null;
+
+    const el = {
+      dateHeader: document.getElementById("dateHeader"),
+      lanes: document.getElementById("lanes"),
+      timeline: document.getElementById("timeline"),
+      riskList: document.getElementById("riskList"),
+      riskCount: document.getElementById("riskCount"),
+      riskModeBtn: document.getElementById("riskModeBtn"),
+      autoModeBtn: document.getElementById("autoModeBtn"),
+      addTaskBtn: document.getElementById("addTaskBtn"),
+      saveJsonBtn: document.getElementById("saveJsonBtn"),
+      loadJsonBtn: document.getElementById("loadJsonBtn"),
+      exportPdfBtn: document.getElementById("exportPdfBtn"),
+      exportPngBtn: document.getElementById("exportPngBtn"),
+      exportShareBtn: document.getElementById("exportShareBtn"),
+      exportCsvBtn: document.getElementById("exportCsvBtn"),
+      jsonInput: document.getElementById("jsonInput"),
+      toast: document.getElementById("toast"),
+      taskForm: document.getElementById("taskForm"),
+      emptyPanel: document.getElementById("emptyPanel"),
+      deleteTaskBtn: document.getElementById("deleteTaskBtn"),
+      ruleChips: document.getElementById("ruleChips"),
+      fields: {
+        id: document.getElementById("fieldId"),
+        name: document.getElementById("fieldName"),
+        module: document.getElementById("fieldModule"),
+        type: document.getElementById("fieldType"),
+        start: document.getElementById("fieldStart"),
+        duration: document.getElementById("fieldDuration"),
+        owner: document.getElementById("fieldOwner"),
+        priority: document.getElementById("fieldPriority"),
+        deadline: document.getElementById("fieldDeadline"),
+        depends: document.getElementById("fieldDepends"),
+        notes: document.getElementById("fieldNotes")
+      },
+      applyEditBtn: document.getElementById("applyEditBtn"),
+      clearStorageBtn: document.getElementById("clearStorageBtn")
+    };
+
+    function dateRange() {
+      const dates = [];
+      let cursor = parseDate(PROJECT_START);
+      const end = parseDate(PROJECT_END);
+      while (cursor <= end) {
+        dates.push(formatDate(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return dates;
+    }
+
+    const dates = dateRange();
+
+    function parseDate(value) {
+      const [y, m, d] = value.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function addDays(value, days) {
+      const date = parseDate(value);
+      date.setDate(date.getDate() + days);
+      return formatDate(date);
+    }
+
+    function diffDays(a, b) {
+      return Math.round((parseDate(a) - parseDate(b)) / 86400000);
+    }
+
+    function clampDate(value) {
+      if (value < PROJECT_START) return PROJECT_START;
+      if (value > PROJECT_END) return PROJECT_END;
+      return value;
+    }
+
+    function endDate(task) {
+      return addDays(task.startDate, task.durationDays);
+    }
+
+    function inclusiveEndDate(task) {
+      return addDays(task.startDate, task.durationDays - 1);
+    }
+
+    function taskById(id) {
+      return tasks.find(task => task.id === id);
+    }
+
+    function taskClass(task) {
+      if (task.type === "外包") return "outsource";
+      if (task.type === "实习生") return "intern";
+      return "internal";
+    }
+
+    function loadTasks() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return structuredClone(initialTasks);
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed.tasks) ? parsed.tasks : parsed;
+      } catch {
+        return structuredClone(initialTasks);
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks }, null, 2));
+    }
+
+    function render() {
+      renderHeader();
+      renderLanes();
+      renderPanel();
+      renderRisks();
+      persist();
+    }
+
+    function renderHeader() {
+      el.dateHeader.innerHTML = `<div class="corner">模块</div>`;
+      dates.forEach(date => {
+        const d = parseDate(date);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const cell = document.createElement("div");
+        cell.className = `date-cell${isWeekend ? " weekend" : ""}${date === "2026-07-24" ? " todayish" : ""}`;
+        cell.innerHTML = `<strong>${d.getMonth() + 1}/${d.getDate()}</strong><span>${["日","一","二","三","四","五","六"][d.getDay()]}</span>`;
+        el.dateHeader.appendChild(cell);
+      });
+    }
+
+    function sortedTasksForModule(module) {
+      return tasks
+        .filter(task => task.module === module)
+        .sort((a, b) => diffDays(a.startDate, b.startDate) || a.name.localeCompare(b.name, "zh-CN"));
+    }
+
+    function getLaneLayout() {
+      let top = 0;
+      return MODULES.map(module => {
+        const laneTasks = sortedTasksForModule(module);
+        const height = Math.max(LANE_HEIGHT, 28 + laneTasks.length * TASK_ROW_HEIGHT);
+        const item = { module, tasks: laneTasks, top, height };
+        top += height;
+        return item;
+      });
+    }
+
+    function renderLanes() {
+      const conflicts = findConflicts();
+      const conflictIds = new Set(conflicts.map(item => item.taskId));
+      const layout = getLaneLayout();
+      const totalHeight = layout.reduce((sum, lane) => sum + lane.height, 0);
+      el.lanes.innerHTML = "";
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("dependency-layer");
+      svg.style.height = `${totalHeight}px`;
+      svg.setAttribute("viewBox", `0 0 ${dates.length * DAY_WIDTH} ${totalHeight}`);
+      svg.innerHTML = `<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#98a2b3"></path></marker></defs>`;
+      el.lanes.appendChild(svg);
+
+      layout.forEach(laneInfo => {
+        const { module, tasks: laneTasks, height } = laneInfo;
+        const lane = document.createElement("div");
+        lane.className = "lane";
+        lane.style.height = `${height}px`;
+        lane.innerHTML = `<div class="lane-label">${module}</div><div class="lane-grid" data-module="${module}"></div>`;
+        el.lanes.appendChild(lane);
+        const grid = lane.querySelector(".lane-grid");
+        dates.forEach((date, index) => {
+          const d = parseDate(date);
+          if (d.getDay() === 0 || d.getDay() === 6) {
+            const band = document.createElement("div");
+            band.className = "weekend-band";
+            band.style.left = `${index * DAY_WIDTH}px`;
+            grid.appendChild(band);
+          }
+        });
+
+        laneTasks
+          .forEach((task, stackIndex) => {
+            const taskEl = document.createElement("div");
+            const left = diffDays(task.startDate, PROJECT_START) * DAY_WIDTH;
+            const width = Math.max(task.durationDays * DAY_WIDTH, 30);
+            const top = 14 + stackIndex * TASK_ROW_HEIGHT;
+            taskEl.className = `task ${taskClass(task)}${conflictIds.has(task.id) ? " conflict" : ""}${selectedId === task.id ? " selected" : ""}`;
+            taskEl.style.left = `${left}px`;
+            taskEl.style.width = `${width}px`;
+            taskEl.style.top = `${top}px`;
+            taskEl.dataset.id = task.id;
+            taskEl.title = tooltipText(task);
+            taskEl.innerHTML = `
+              <div class="task-content">
+                <div class="task-name">${escapeHtml(task.name)}</div>
+                <div class="task-meta">${task.owner} · ${task.type} · ${task.durationDays}天</div>
+              </div>
+              <div class="resize-handle" title="拖动调整工期"></div>
+            `;
+            grid.appendChild(taskEl);
+          });
+      });
+
+      drawDependencies(svg);
+      bindTaskEvents();
+    }
+
+    function drawDependencies(svg) {
+      const positions = new Map();
+      getLaneLayout().forEach(laneInfo => {
+        laneInfo.tasks.forEach((task, stackIndex) => {
+          const x1 = diffDays(task.startDate, PROJECT_START) * DAY_WIDTH;
+          const x2 = x1 + task.durationDays * DAY_WIDTH;
+          const y = laneInfo.top + 30 + stackIndex * TASK_ROW_HEIGHT;
+          positions.set(task.id, { x1, x2, y });
+        });
+      });
+
+      tasks.forEach(task => {
+        const to = positions.get(task.id);
+        if (!to) return;
+        task.dependsOn.forEach(depId => {
+          const from = positions.get(depId);
+          if (!from) return;
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const mid = Math.max(from.x2 + 12, Math.min(to.x1 - 12, (from.x2 + to.x1) / 2));
+          path.setAttribute("d", `M ${from.x2} ${from.y} C ${mid} ${from.y}, ${mid} ${to.y}, ${to.x1} ${to.y}`);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", "#98a2b3");
+          path.setAttribute("stroke-width", "1.7");
+          path.setAttribute("marker-end", "url(#arrow)");
+          path.setAttribute("opacity", "0.9");
+          svg.appendChild(path);
+        });
+      });
+    }
+
+    function bindTaskEvents() {
+      document.querySelectorAll(".task").forEach(node => {
+        node.addEventListener("pointerdown", event => {
+          const task = taskById(node.dataset.id);
+          if (!task) return;
+          selectedId = task.id;
+          const isResize = event.target.classList.contains("resize-handle");
+          dragState = {
+            id: task.id,
+            type: isResize ? "resize" : "move",
+            startX: event.clientX,
+            originalStart: task.startDate,
+            originalDuration: task.durationDays
+          };
+          node.setPointerCapture(event.pointerId);
+          renderPanel();
+          event.preventDefault();
+        });
+      });
+    }
+
+    window.addEventListener("pointermove", event => {
+      if (!dragState) return;
+      const task = taskById(dragState.id);
+      if (!task) return;
+      const deltaDays = Math.round((event.clientX - dragState.startX) / DAY_WIDTH);
+      if (dragState.type === "move") {
+        const maxOffset = dates.length - task.durationDays;
+        const nextOffset = Math.max(0, Math.min(maxOffset, diffDays(dragState.originalStart, PROJECT_START) + deltaDays));
+        const oldEnd = endDate(task);
+        task.startDate = addDays(PROJECT_START, nextOffset);
+        if (mode === "auto") cascadeFrom(task.id, oldEnd, endDate(task));
+      } else {
+        const startOffset = diffDays(task.startDate, PROJECT_START);
+        task.durationDays = Math.max(1, Math.min(dates.length - startOffset, dragState.originalDuration + deltaDays));
+        if (mode === "auto") cascadeFrom(task.id, addDays(dragState.originalStart, dragState.originalDuration), endDate(task));
+      }
+      render();
+    });
+
+    window.addEventListener("pointerup", () => {
+      dragState = null;
+    });
+
+    function cascadeFrom(sourceId, oldEnd, newEnd) {
+      const shift = Math.max(0, diffDays(newEnd, oldEnd));
+      if (shift <= 0) return;
+      const queue = [sourceId];
+      const moved = new Set();
+      while (queue.length) {
+        const current = queue.shift();
+        tasks.forEach(task => {
+          if (!task.dependsOn.includes(current) || moved.has(task.id)) return;
+          const latestEnd = latestDependencyEnd(task);
+          if (latestEnd && task.startDate < latestEnd) {
+            const maxStart = addDays(PROJECT_END, 1 - task.durationDays);
+            task.startDate = latestEnd > maxStart ? maxStart : latestEnd;
+            moved.add(task.id);
+          } else if (shift > 0) {
+            const maxStart = addDays(PROJECT_END, 1 - task.durationDays);
+            task.startDate = addDays(task.startDate, Math.min(shift, Math.max(0, diffDays(maxStart, task.startDate))));
+            moved.add(task.id);
+          }
+          queue.push(task.id);
+        });
+      }
+    }
+
+    function latestDependencyEnd(task) {
+      const ends = task.dependsOn.map(id => taskById(id)).filter(Boolean).map(endDate);
+      return ends.length ? ends.sort().at(-1) : null;
+    }
+
+    function tooltipText(task) {
+      const deps = task.dependsOn.length
+        ? task.dependsOn.map(id => `${id}${taskById(id) ? `（${taskById(id).name}）` : ""}`).join("，")
+        : "无";
+      return `${task.name}
+模块：${task.module}
+时间：${task.startDate} 至 ${inclusiveEndDate(task)}
+前置：${deps}
+备注：${task.notes || "无"}`;
+    }
+
+    function renderPanel() {
+      const task = taskById(selectedId);
+      el.taskForm.hidden = !task;
+      el.emptyPanel.hidden = !!task;
+      el.deleteTaskBtn.disabled = !task;
+      if (!task) return;
+
+      el.fields.module.innerHTML = MODULES.map(module => `<option>${module}</option>`).join("");
+      el.fields.depends.innerHTML = tasks
+        .filter(item => item.id !== task.id)
+        .map(item => `<option value="${item.id}">${item.id} · ${item.name}</option>`)
+        .join("");
+
+      el.fields.id.value = task.id;
+      el.fields.name.value = task.name;
+      el.fields.module.value = task.module;
+      el.fields.type.value = task.type;
+      el.fields.start.value = task.startDate;
+      el.fields.duration.value = task.durationDays;
+      el.fields.owner.value = task.owner;
+      el.fields.priority.value = task.priority;
+      el.fields.deadline.value = task.deadline;
+      el.fields.notes.value = task.notes || "";
+      [...el.fields.depends.options].forEach(option => {
+        option.selected = task.dependsOn.includes(option.value);
+      });
+
+      el.ruleChips.innerHTML = dependencyHints(task).map(text => `<span class="chip">${text}</span>`).join("");
+    }
+
+    function dependencyHints(task) {
+      if (task.module === "模型") return ["规则：模型依赖原画"];
+      if (task.module === "动作") return ["规则：动作依赖模型/绑定"];
+      if (task.module === "Spine") return ["规则：Spine 动作依赖 Spine 绑定"];
+      return ["规则：原画最晚 7/24 截止"];
+    }
+
+    function renderRisks() {
+      const conflicts = findConflicts();
+      el.riskCount.textContent = conflicts.length;
+      if (!conflicts.length) {
+        el.riskList.innerHTML = `<div class="risk-ok">当前没有依赖时间冲突。</div>`;
+        return;
+      }
+      el.riskList.innerHTML = conflicts.map(item => `
+        <div class="risk-item">
+          <strong>${escapeHtml(item.taskName)}</strong> 开始于 ${item.startDate}，早于前置任务 <strong>${escapeHtml(item.depName)}</strong> 完成时间 ${item.depEndDate}。
+        </div>
+      `).join("");
+    }
+
+    function findConflicts() {
+      const conflicts = [];
+      tasks.forEach(task => {
+        task.dependsOn.forEach(depId => {
+          const dep = taskById(depId);
+          if (!dep) return;
+          const depEnd = endDate(dep);
+          if (task.startDate < depEnd) {
+            conflicts.push({
+              taskId: task.id,
+              taskName: task.name,
+              startDate: task.startDate,
+              depName: dep.name,
+              depEndDate: depEnd
+            });
+          }
+        });
+      });
+      return conflicts;
+    }
+
+    function applyForm(event) {
+      event.preventDefault();
+      const task = taskById(selectedId);
+      if (!task) return;
+      const oldEnd = endDate(task);
+      task.name = el.fields.name.value.trim() || task.name;
+      task.module = el.fields.module.value;
+      task.type = el.fields.type.value;
+      task.startDate = clampDate(el.fields.start.value || task.startDate);
+      task.durationDays = Math.max(1, Number(el.fields.duration.value) || 1);
+      task.owner = el.fields.owner.value.trim();
+      task.priority = el.fields.priority.value;
+      task.deadline = el.fields.deadline.value || task.deadline;
+      task.dependsOn = [...el.fields.depends.selectedOptions].map(option => option.value);
+      task.notes = el.fields.notes.value.trim();
+      if (mode === "auto") cascadeFrom(task.id, oldEnd, endDate(task));
+      render();
+    }
+
+    function addTask() {
+      const count = tasks.length + 1;
+      const task = {
+        id: `task-${String(count).padStart(2, "0")}`,
+        name: "新任务",
+        module: "原画",
+        startDate: PROJECT_START,
+        durationDays: 3,
+        owner: "待分配",
+        type: "内部",
+        dependsOn: [],
+        deadline: PROJECT_END,
+        priority: "中",
+        notes: ""
+      };
+      tasks.push(task);
+      selectedId = task.id;
+      render();
+    }
+
+    function deleteSelected() {
+      if (!selectedId) return;
+      tasks = tasks.filter(task => task.id !== selectedId);
+      tasks.forEach(task => {
+        task.dependsOn = task.dependsOn.filter(id => id !== selectedId);
+      });
+      selectedId = tasks[0]?.id || null;
+      render();
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 1000);
+    }
+
+    function downloadBlob(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 1000);
+    }
+
+    function saveJson() {
+      download("nightwalker-art-schedule.json", JSON.stringify({ project: "夜行者项目", range: [PROJECT_START, PROJECT_END], tasks }, null, 2), "application/json;charset=utf-8");
+    }
+
+    function exportCsv() {
+      const headers = ["id", "name", "module", "startDate", "durationDays", "owner", "type", "dependsOn", "deadline", "priority", "notes"];
+      const rows = tasks.map(task => headers.map(key => {
+        const value = key === "dependsOn" ? task.dependsOn.join("|") : task[key];
+        return `"${String(value ?? "").replaceAll('"', '""')}"`;
+      }).join(","));
+      download("nightwalker-art-schedule.csv", `${headers.join(",")}\n${rows.join("\n")}`, "text/csv;charset=utf-8");
+    }
+
+    function showToast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => el.toast.classList.remove("show"), 2200);
+    }
+
+    function exportSvgString() {
+      const layout = getLaneLayout();
+      const width = dates.length * DAY_WIDTH + 360;
+      const headerHeight = 72;
+      const totalHeight = headerHeight + layout.reduce((sum, lane) => sum + lane.height, 0) + 84;
+      const conflicts = findConflicts();
+      const conflictIds = new Set(conflicts.map(item => item.taskId));
+      const esc = escapeHtml;
+      const parts = [
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${totalHeight}" viewBox="0 0 ${width} ${totalHeight}">`,
+        `<rect width="${width}" height="${totalHeight}" fill="#f5f7fb"/>`,
+        `<text x="20" y="28" fill="#111827" font-size="20" font-weight="700" font-family="Microsoft YaHei, Arial">夜行者项目美术排期</text>`,
+        `<text x="20" y="52" fill="#667085" font-size="13" font-family="Microsoft YaHei, Arial">2026-06-26 至 2026-07-31 · 原画 / 模型 / Spine / 动作 · CSV 需求按产能规则细化</text>`,
+        `<rect x="0" y="${headerHeight}" width="${width}" height="36" fill="#ffffff"/>`,
+        `<line x1="0" y1="${headerHeight + 36}" x2="${width}" y2="${headerHeight + 36}" stroke="#bcc5d4"/>`
+      ];
+
+      dates.forEach((date, index) => {
+        const x = 88 + index * DAY_WIDTH;
+        const d = parseDate(date);
+        const weekend = d.getDay() === 0 || d.getDay() === 6;
+        if (weekend) parts.push(`<rect x="${x}" y="${headerHeight}" width="${DAY_WIDTH}" height="${totalHeight - headerHeight}" fill="#eaf6ff"/>`);
+        parts.push(`<line x1="${x}" y1="${headerHeight}" x2="${x}" y2="${totalHeight - 20}" stroke="#d9dee8"/>`);
+        parts.push(`<text x="${x + DAY_WIDTH / 2}" y="${headerHeight + 16}" text-anchor="middle" fill="#667085" font-size="10" font-family="Arial">${d.getMonth() + 1}/${d.getDate()}</text>`);
+        parts.push(`<text x="${x + DAY_WIDTH / 2}" y="${headerHeight + 30}" text-anchor="middle" fill="#667085" font-size="10" font-family="Microsoft YaHei, Arial">${["日","一","二","三","四","五","六"][d.getDay()]}</text>`);
+      });
+
+      layout.forEach(lane => {
+        const y = headerHeight + 36 + lane.top;
+        parts.push(`<rect x="0" y="${y}" width="${width}" height="${lane.height}" fill="#ffffff" opacity="0.68"/>`);
+        parts.push(`<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="#d9dee8"/>`);
+        parts.push(`<text x="44" y="${y + 26}" text-anchor="middle" fill="#344054" font-size="14" font-weight="700" font-family="Microsoft YaHei, Arial">${esc(lane.module)}</text>`);
+        lane.tasks.forEach((task, index) => {
+          const x = 88 + diffDays(task.startDate, PROJECT_START) * DAY_WIDTH;
+          const barWidth = Math.max(task.durationDays * DAY_WIDTH, 108);
+          const barY = y + 14 + index * TASK_ROW_HEIGHT;
+          const color = conflictIds.has(task.id) ? "#d92d20" : task.type === "外包" ? "#7c3aed" : task.type === "实习生" ? "#d99a00" : "#0f766e";
+          const textColor = task.type === "实习生" && !conflictIds.has(task.id) ? "#111827" : "#ffffff";
+          parts.push(`<rect x="${x}" y="${barY}" width="${barWidth}" height="38" rx="6" fill="${color}"/>`);
+          parts.push(`<text x="${x + 8}" y="${barY + 16}" fill="${textColor}" font-size="12" font-weight="700" font-family="Microsoft YaHei, Arial">${esc(task.name).slice(0, 22)}</text>`);
+          parts.push(`<text x="${x + 8}" y="${barY + 31}" fill="${textColor}" opacity="0.88" font-size="10" font-family="Microsoft YaHei, Arial">${esc(task.owner)} · ${esc(task.type)} · ${task.durationDays}天</text>`);
+        });
+      });
+
+      const legendY = totalHeight - 34;
+      parts.push(`<rect x="20" y="${legendY - 16}" width="14" height="10" rx="2" fill="#0f766e"/><text x="40" y="${legendY - 7}" fill="#667085" font-size="12" font-family="Microsoft YaHei, Arial">内部</text>`);
+      parts.push(`<rect x="92" y="${legendY - 16}" width="14" height="10" rx="2" fill="#d99a00"/><text x="112" y="${legendY - 7}" fill="#667085" font-size="12" font-family="Microsoft YaHei, Arial">实习生</text>`);
+      parts.push(`<rect x="188" y="${legendY - 16}" width="14" height="10" rx="2" fill="#7c3aed"/><text x="208" y="${legendY - 7}" fill="#667085" font-size="12" font-family="Microsoft YaHei, Arial">外包</text>`);
+      parts.push(`<rect x="266" y="${legendY - 16}" width="14" height="10" rx="2" fill="#d92d20"/><text x="286" y="${legendY - 7}" fill="#667085" font-size="12" font-family="Microsoft YaHei, Arial">依赖冲突</text>`);
+      parts.push(`</svg>`);
+      return parts.join("");
+    }
+
+    function exportPdf() {
+      selectedId = null;
+      render();
+      const svg = exportSvgString();
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("浏览器拦截了打印窗口。请允许弹窗，或先用“导出截图”。");
+        return;
+      }
+      printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>夜行者项目美术排期</title><style>@page{size:A3 landscape;margin:8mm}body{margin:0;background:#fff}svg{width:100%;height:auto}</style></head><body>${svg}<script>window.onload=()=>{setTimeout(()=>window.print(),200)}<\/script></body></html>`);
+      printWindow.document.close();
+      showToast("已打开打印页，请选择保存为 PDF");
+    }
+
+    async function exportPng() {
+      try {
+        showToast("正在生成截图...");
+        const svg = exportSvgString();
+        const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth * 2;
+        canvas.height = img.naturalHeight * 2;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f5f7fb";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob => {
+          if (!blob) {
+            alert("截图生成失败，请使用浏览器自带截图或打印保存 PDF。");
+            return;
+          }
+          downloadBlob("nightwalker-art-schedule.png", blob);
+          showToast("截图已导出");
+        }, "image/png");
+      } catch {
+        alert("截图生成失败，请使用浏览器自带截图或打印保存 PDF。");
+      }
+    }
+
+    function exportSharePage() {
+      const seed = `<script id="share-data-seed">
+localStorage.setItem(${JSON.stringify(STORAGE_KEY)}, ${JSON.stringify(JSON.stringify({ tasks }, null, 2))});
+<\/script>`;
+      let html = "<!doctype html>\n" + document.documentElement.outerHTML;
+      html = html.replace(/<script id="share-data-seed">[\s\S]*?<\/script>/, "");
+      html = html.replace("<body>", `<body>\n  ${seed}`);
+      download("nightwalker-art-schedule-share.html", html, "text/html;charset=utf-8");
+      showToast("分享网页已导出");
+    }
+
+    function readJson(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const nextTasks = Array.isArray(parsed) ? parsed : parsed.tasks;
+          if (!Array.isArray(nextTasks)) throw new Error("Invalid tasks");
+          tasks = nextTasks.map(normalizeTask);
+          selectedId = tasks[0]?.id || null;
+          render();
+        } catch {
+          alert("JSON 格式不正确，未能读取。");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function normalizeTask(task) {
+      return {
+        id: String(task.id),
+        name: task.name || "未命名任务",
+        module: MODULES.includes(task.module) ? task.module : "原画",
+        startDate: clampDate(task.startDate || PROJECT_START),
+        durationDays: Math.max(1, Number(task.durationDays) || 1),
+        owner: task.owner || "",
+        type: ["内部", "外包", "实习生"].includes(task.type) ? task.type : "内部",
+        dependsOn: Array.isArray(task.dependsOn) ? task.dependsOn.map(String) : [],
+        deadline: task.deadline || PROJECT_END,
+        priority: task.priority || "中",
+        notes: task.notes || ""
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    el.riskModeBtn.addEventListener("click", () => {
+      mode = "risk";
+      el.riskModeBtn.classList.add("active");
+      el.autoModeBtn.classList.remove("active");
+    });
+
+    el.autoModeBtn.addEventListener("click", () => {
+      mode = "auto";
+      el.autoModeBtn.classList.add("active");
+      el.riskModeBtn.classList.remove("active");
+    });
+
+    el.addTaskBtn.addEventListener("click", addTask);
+    el.deleteTaskBtn.addEventListener("click", deleteSelected);
+    el.saveJsonBtn.addEventListener("click", saveJson);
+    el.exportPdfBtn.addEventListener("click", exportPdf);
+    el.exportPngBtn.addEventListener("click", exportPng);
+    el.exportShareBtn.addEventListener("click", exportSharePage);
+    el.exportCsvBtn.addEventListener("click", exportCsv);
+    el.loadJsonBtn.addEventListener("click", () => el.jsonInput.click());
+    el.jsonInput.addEventListener("change", event => {
+      const file = event.target.files?.[0];
+      if (file) readJson(file);
+      event.target.value = "";
+    });
+    el.taskForm.addEventListener("submit", applyForm);
+    el.clearStorageBtn.addEventListener("click", () => {
+      localStorage.removeItem(STORAGE_KEY);
+      tasks = structuredClone(initialTasks);
+      selectedId = tasks[0]?.id || null;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
